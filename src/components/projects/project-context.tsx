@@ -7,7 +7,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { ConsoleProvider } from "@comp/console/context";
 import ProjectEditor from "@comp/project-editor/project-editor";
 import { IProject } from "@comp/projects/types";
-import { ICsoundObject } from "@comp/csound/types";
+import { CsoundInstance } from "@comp/csound/types";
 import Header from "@comp/header/header";
 import { activateProject, downloadProjectOnce } from "./actions";
 import * as SS from "./styles";
@@ -44,7 +44,7 @@ export default (properties: IProjectContextProperties) => {
             path(["ProjectsReducer", "projects", activeProjectUid], store)
     );
 
-    const csound: ICsoundObject | undefined = useSelector(
+    const csound: CsoundInstance | undefined = useSelector(
         path(["csound", "csound"])
     );
 
@@ -68,7 +68,7 @@ export default (properties: IProjectContextProperties) => {
                             );
                     }
                 }
-                await activateProject(projectUid, csound)(dispatch);
+                await activateProject(projectUid)(dispatch);
                 setProjectIsReady(true);
             };
             setProjectFetchStarted(true);

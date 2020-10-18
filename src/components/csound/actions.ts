@@ -1,49 +1,61 @@
-import { store } from "@store";
 import { IStore } from "@store/types";
-import { IDocument, IProject } from "../projects/types";
+// import { IDocument, IProject } from "../projects/types";
 import {
-    ICsoundObject,
+    CsoundInstance,
+    ICsound,
     SET_CSOUND,
-    ICsoundStatus,
+    CsoundPlayState,
     SET_CSOUND_PLAY_STATE
 } from "./types";
-import { selectActiveProject } from "../projects/selectors";
-import { saveAs } from "file-saver";
+// import { selectActiveProject } from "../projects/selectors";
+// import { saveAs } from "file-saver";
 import { path } from "ramda";
-import { storageReference } from "../../config/firestore";
+// import { storageReference } from "../../config/firestore";
 
-export const setCsound = (csound: ICsoundObject) => {
+export const setCsound = (csound: CsoundInstance, libcsound: ICsound) => {
     return {
         type: SET_CSOUND,
-        csound
+        csound,
+        libcsound
     };
 };
 
-export const playCSDFromEMFS = (projectUid: string, emfsPath: string) => {
-    return async (dispatch: any) => {
-        const state = store.getState();
-        const cs = path(["csound", "csound"], state);
+export const playCSDFromEMFS = (projectUid: string, filePath: string) => {
+    return async (dispatch: any, getState) => {
+        const state: IStore = getState();
+        const csound: CsoundInstance | undefined = path(
+            ["csound", "csound"],
+            state
+        );
+        const libcsound: ICsound | undefined = path(
+            ["csound", "libcsound"],
+            state
+        );
+        const playState: CsoundPlayState = path(["csound", "playState"], state);
+
         const clearConsoleCallback = path(
             ["ConsoleReducer", "clearConsole"],
             state
         );
 
-        if (cs) {
-            const playState = cs.getPlayState();
+        if (csound && libcsound) {
             if (playState === "error") {
                 dispatch(setCsoundPlayState("stopped"));
             }
             typeof clearConsoleCallback === "function" &&
                 clearConsoleCallback();
-            cs.audioContext.resume();
-            cs.resetIfNeeded();
-            cs.setOption("-odac");
-            cs.setOption("-+msg_color=false");
-            await cs.setCurrentDirFS(projectUid);
-            const result = await cs.compileCSDPromise(emfsPath);
-            if (result === 0) {
+
+            await libcsound.csoundSetOption(csound, "-odac");
+            await libcsound.csoundSetOption(csound, "-+msg_color=false");
+            // TODO
+            // await cs.setCurrentDirFS(projectUid);
+            const compileResult = await libcsound.csoundCompileCsd(
+                csound,
+                filePath
+            );
+            const startResult = await libcsound.csoundStart(csound);
+            if (compileResult === 0 && startResult === 0) {
                 dispatch(setCsoundPlayState("playing"));
-                cs.start();
             } else {
                 dispatch(setCsoundPlayState("error"));
             }
@@ -52,103 +64,147 @@ export const playCSDFromEMFS = (projectUid: string, emfsPath: string) => {
 };
 
 export const playCSDFromString = (projectUid: string, csd: string) => {
-    return async (dispatch: any) => {
-        const cs = path(["csound", "csound"], store.getState()) as
-            | ICsoundObject
-            | undefined;
-        if (cs) {
-            await cs.setCurrentDirFS(projectUid);
-            cs.audioContext.resume();
-            cs.setOption("-odac");
-            cs.setOption("-+msg_color=false");
-            cs.compileCSD(csd);
-            cs.start();
-            dispatch(setCsoundPlayState("playing"));
+    return async (dispatch: any, getState) => {
+        const state: IStore = getState();
+        const csound: CsoundInstance | undefined = path(
+            ["csound", "csound"],
+            state
+        );
+        const libcsound: ICsound | undefined = path(
+            ["csound", "libcsound"],
+            state
+        );
+        if (csound && libcsound) {
+            // TODO
+            // await cs.setCurrentDirFS(projectUid);
+            await libcsound.csoundSetOption(csound, "-odac");
+            await libcsound.csoundSetOption(csound, "-+msg_color=false");
+            const compileResult = await libcsound.csoundCompileCsdText(
+                csound,
+                csd
+            );
+            const startResult = await libcsound.csoundStart(csound);
+
+            if (compileResult === 0 && startResult === 0) {
+                dispatch(setCsoundPlayState("playing"));
+            } else {
+                dispatch(setCsoundPlayState("error"));
+            }
         }
     };
 };
 
 export const playORCFromString = (projectUid: string, orc: string) => {
-    return async (dispatch: any) => {
-        const cs = path(["csound", "csound"], store.getState()) as
-            | ICsoundObject
-            | undefined;
-        if (cs) {
-            await cs.setCurrentDirFS(projectUid);
-            if (cs.getPlayState() === "paused") {
+    return async (dispatch: any, getState) => {
+        const state: IStore = getState();
+        const csound: CsoundInstance | undefined = path(
+            ["csound", "csound"],
+            state
+        );
+        const libcsound: ICsound | undefined = path(
+            ["csound", "libcsound"],
+            state
+        );
+
+        const playState: CsoundPlayState = path(["csound", "playState"], state);
+
+        if (csound && libcsound) {
+            // await cs.setCurrentDirFS(projectUid);
+            if (playState === "paused") {
                 dispatch(setCsoundPlayState("playing"));
-                cs.play();
+                await libcsound.csoundResume();
             } else {
-                cs.audioContext.resume();
                 // cs.reset();
-                cs.setOption("-odac");
-                cs.setOption("-+msg_color=false");
-                cs.setOption("-d");
-                cs.compileOrc(orc);
-                cs.start();
-                dispatch(setCsoundPlayState("playing"));
+                await libcsound.csoundSetOption(csound, "-odac");
+                await libcsound.csoundSetOption(csound, "-+msg_color=false");
+                await libcsound.csoundSetOption(csound, "-d");
+                await libcsound.csoundSetOption(csound, "-d");
+
+                const compileResult = await libcsound.csoundCompileOrc(
+                    csound,
+                    orc
+                );
+                const startResult = await libcsound.csoundStart(csound);
+
+                if (compileResult === 0 && startResult === 0) {
+                    dispatch(setCsoundPlayState("playing"));
+                } else {
+                    dispatch(setCsoundPlayState("error"));
+                }
             }
         }
     };
 };
 
 export const stopCsound = () => {
-    return async (dispatch: any) => {
-        const cs = path(["csound", "csound"], store.getState());
-        if (cs && typeof cs.stop === "function") {
+    return async (dispatch: any, getState) => {
+        const state: IStore = getState();
+        const csound: CsoundInstance | undefined = path(
+            ["csound", "csound"],
+            state
+        );
+        const libcsound: ICsound | undefined = path(
+            ["csound", "libcsound"],
+            state
+        );
+
+        if (csound && libcsound) {
             dispatch(setCsoundPlayState("stopped"));
-            cs.stop();
-        } else {
-            if (cs && typeof cs.getPlayState === "function") {
-                dispatch(setCsoundPlayState(cs.getPlayState()));
-            }
+            libcsound.csoundStop(csound);
         }
     };
 };
 
 export const pauseCsound = () => {
     return async (dispatch: any, getState) => {
-        const cs = path(["csound", "csound"], getState()) as
-            | ICsoundObject
-            | undefined;
-        if (cs && cs.getPlayState() === "playing") {
-            cs.pause();
-            dispatch(setCsoundPlayState("paused"));
-        } else {
-            cs && dispatch(setCsoundPlayState(cs.getPlayState()));
+        const state: IStore = getState();
+        // const csound: CsoundInstance | undefined = path(
+        //     ["csound", "csound"],
+        //     state
+        // );
+        const libcsound: ICsound | undefined = path(
+            ["csound", "libcsound"],
+            state
+        );
+        const playState: CsoundPlayState = path(["csound", "playState"], state);
+
+        if (libcsound && playState === "playing") {
+            await libcsound.csoundPause();
+            // dispatch(setCsoundPlayState("paused"));
         }
     };
 };
 
 export const resumePausedCsound = () => {
     return async (dispatch: any, getState) => {
-        const cs = path(["csound", "csound"], getState()) as
-            | ICsoundObject
-            | undefined;
-        if (cs && cs.getPlayState() === "paused") {
-            cs.resume();
-            dispatch(setCsoundPlayState("playing"));
-        } else {
-            cs && dispatch(setCsoundPlayState(cs.getPlayState()));
+        const state: IStore = getState();
+        const libcsound: ICsound | undefined = path(
+            ["csound", "libcsound"],
+            state
+        );
+        const playState: CsoundPlayState = path(["csound", "playState"], state);
+        if (libcsound && playState === "paused") {
+            await libcsound.csoundResume();
+            // dispatch(setCsoundPlayState("playing"));
         }
     };
 };
 
-export const setCsoundPlayState = (playState: ICsoundStatus) => {
+export const setCsoundPlayState = (playState: CsoundPlayState) => {
     return {
         type: SET_CSOUND_PLAY_STATE,
-        status: playState
+        playState
     };
 };
 
 export const renderToDisk = () => {
-    return async (dispatch: any) => {
-        const state: IStore = store.getState();
+    return async (dispatch: any, getState) => {
+        /*
+        const state: IStore = getState();
         const project: IProject | undefined = selectActiveProject(state);
         if (!project) {
             return;
         }
-
         const encoder = new TextEncoder();
 
         if (project) {
@@ -216,9 +272,11 @@ export const renderToDisk = () => {
         //     cs.compileCSD("project.csd");
         //     cs.start();
         // }
+*/
     };
 };
 
+/*
 export const enableMidiInput = () => {
     return async (dispatch: any, getState) => {
         const cs = path(["csound", "csound"], getState()) as
@@ -240,3 +298,4 @@ export const enableAudioInput = () => {
         });
     };
 };
+*/

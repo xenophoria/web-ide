@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import withStyles from "./styles";
 import { useSelector } from "react-redux";
 import { path } from "ramda";
-import { ICsoundObject } from "../csound/types";
+import { ICsound } from "../csound/types";
 import { scaleLinear } from "d3-scale";
 
 type ISpectralAnalyzerProperties = {
@@ -27,8 +27,8 @@ type CanvasReference = {
     current: HTMLCanvasElement | null;
 };
 
-const connectVisualizer = (
-    csound: ICsoundObject,
+const connectVisualizer = async (
+    libcsound: ICsound,
     canvasReference: CanvasReference
 ) => {
     if (!canvasReference || !canvasReference.current) {
@@ -43,12 +43,11 @@ const connectVisualizer = (
         }
 
         //console.log("Connect Visualizer!");
-
-        const node = csound.getNode();
-        const context = node.context;
-        const scopeNode = context.createAnalyser();
+        const audioContext = await libcsound.getAudioContext();
+        const scopeNode = audioContext.createAnalyser();
         scopeNode.fftSize = 2048;
-        node.connect(scopeNode);
+        console.log("audioContext", audioContext);
+        // audioContext.connect(scopeNode);
 
         const mags = () => {
             resize(canvas);
@@ -84,33 +83,33 @@ const connectVisualizer = (
     }
 };
 
-const disconnectVisualizer = (
-    csound: ICsoundObject,
-    scopeNode: AnalyserNode
-) => {
-    const node = csound.getNode();
-    node.disconnect(scopeNode);
+const disconnectVisualizer = (libcsound: ICsound, scopeNode: AnalyserNode) => {
+    console.log(libcsound, scopeNode);
+    // const node = csound.getNode();
+    // node.disconnect(scopeNode);
 };
 
 const SpectralAnalyzer = ({ classes }: ISpectralAnalyzerProperties) => {
     const canvasReference = useRef() as CanvasReference;
 
-    const csound: ICsoundObject | undefined = useSelector(
-        path(["csound", "csound"])
+    const libcsound: ICsound | undefined = useSelector(
+        path(["csound", "libcsound"])
     );
 
     useEffect(() => {
         let scopeNode: AnalyserNode | undefined;
-        if (csound && canvasReference.current) {
-            scopeNode = connectVisualizer(csound, canvasReference);
+        if (libcsound && canvasReference.current) {
+            connectVisualizer(libcsound, canvasReference).then(
+                (sn) => (scopeNode = sn)
+            );
         }
 
         return () => {
-            if (csound && scopeNode) {
-                disconnectVisualizer(csound, scopeNode);
+            if (libcsound && scopeNode) {
+                disconnectVisualizer(libcsound, scopeNode);
             }
         };
-    }, [canvasReference, csound]);
+    }, [canvasReference, libcsound]);
 
     return (
         <canvas

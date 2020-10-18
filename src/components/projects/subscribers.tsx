@@ -1,6 +1,6 @@
 import { IDocument, IDocumentsMap } from "./types";
 import { store } from "@store/index";
-import { ICsoundObject } from "@comp/csound/types";
+import { ICsound } from "@comp/csound/types";
 import { projects, targets } from "@config/firestore";
 import {
     addDocumentToEMFS,
@@ -31,7 +31,7 @@ import {
 export const subscribeToProjectFilesChanges = (
     projectUid: string,
     dispatch: any,
-    csound: ICsoundObject
+    libcsound: ICsound
 ) => {
     const unsubscribe: () => void = projects
         .doc(projectUid)
@@ -63,7 +63,12 @@ export const subscribeToProjectFilesChanges = (
                             [`/${projectUid}`],
                             append(d.filename, pathPrefix)
                         ).join("/");
-                        addDocumentToEMFS(projectUid, csound, d, absolutePath);
+                        addDocumentToEMFS(
+                            projectUid,
+                            libcsound,
+                            d,
+                            absolutePath
+                        );
                     }
                 }, values(documents));
                 dispatch(addProjectDocuments(projectUid, documents));
@@ -119,13 +124,13 @@ export const subscribeToProjectFilesChanges = (
                         ).join("/");
                         // Handle file moved
                         if (newAbsolutePath !== lastAbsolutePath) {
-                            csound.unlinkFromFS(lastAbsolutePath);
+                            libcsound.rmrfFs(lastAbsolutePath);
                         } else {
-                            csound.unlinkFromFS(newAbsolutePath);
+                            libcsound.rmrfFs(newAbsolutePath);
                         }
                         addDocumentToEMFS(
                             projectUid,
-                            csound,
+                            libcsound,
                             document_,
                             newAbsolutePath
                         );
@@ -166,7 +171,7 @@ export const subscribeToProjectFilesChanges = (
                             [`/${projectUid}`],
                             append(document_.filename, pathPrefix)
                         ).join("/");
-                        csound.unlinkFromFS(absolutePath);
+                        libcsound.rmrfFs(absolutePath);
                     }
                 });
             }
@@ -199,12 +204,12 @@ export const subscribeToProjectTargetsChanges = (
 export const subscribeToProjectChanges = (
     projectUid: string,
     dispatch: any,
-    csound: ICsoundObject
+    libcsound: ICsound
 ) => {
     const unsubscribeFileChanges = subscribeToProjectFilesChanges(
         projectUid,
         dispatch,
-        csound
+        libcsound
     );
     const unsubscribeTargetChanges = subscribeToProjectTargetsChanges(
         projectUid,

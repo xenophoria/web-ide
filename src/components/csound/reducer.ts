@@ -1,13 +1,15 @@
 import {
-    ICsoundObject,
-    ICsoundStatus,
+    CsoundInstance,
+    CsoundPlayState,
+    ICsound,
     SET_CSOUND,
     SET_CSOUND_PLAY_STATE
 } from "./types";
 
 export interface ICsoundReducer {
-    csound: ICsoundObject | undefined;
-    status: ICsoundStatus;
+    csound: CsoundInstance | undefined;
+    libcsound: ICsound | undefined;
+    playState: CsoundPlayState;
 }
 
 export default (state: any, action: any): ICsoundReducer => {
@@ -17,20 +19,22 @@ export default (state: any, action: any): ICsoundReducer => {
             (window as any).csound = action.csound;
             return {
                 csound: action.csound,
-                status: state.status
+                libcsound: action.libcsound,
+                playState: state.playState
             };
         }
         case SET_CSOUND_PLAY_STATE: {
             return {
                 csound: state.csound,
-                status: action.status
+                libcsound: state.libcsound,
+                playState: action.playState
             };
         }
         default: {
             return (
                 state ||
                 ({
-                    status: "initialized"
+                    playState: "initialized"
                 } as ICsoundReducer)
             );
         }

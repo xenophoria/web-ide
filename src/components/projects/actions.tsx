@@ -1,5 +1,5 @@
 import { push } from "connected-react-router";
-import { ICsoundObject } from "@comp/csound/types";
+import { ICsound } from "@comp/csound/types";
 import {
     tabOpenByDocumentUid,
     tabDockInit
@@ -95,7 +95,7 @@ export const downloadProjectOnce = (projectUid: string) => {
 // TODO: optimize
 export const downloadAllProjectDocumentsOnce = (
     projectUid: string,
-    csound: ICsoundObject
+    libcsound: ICsound
 ) => {
     return async (dispatch: any) => {
         const filesReference = await projects
@@ -130,7 +130,7 @@ export const downloadAllProjectDocumentsOnce = (
                 ).join("/");
                 await addDocumentToEMFS(
                     projectUid,
-                    csound,
+                    libcsound,
                     document_,
                     absolutePath
                 );
@@ -162,7 +162,7 @@ export const closeProject = () => {
     };
 };
 
-export const activateProject = (projectUid: string, csound) => {
+export const activateProject = (projectUid: string) => {
     return async (dispatch: any) => {
         dispatch({
             type: ACTIVATE_PROJECT,
@@ -307,7 +307,7 @@ export const saveAllAndClose = (goTo: string) => {
 
 // for unauthorized or offline playing
 export const saveFileOffline = (
-    csound: ICsoundObject,
+    libcsound: ICsound,
     activeProjectUid: string,
     document: IDocument,
     newValue: string
@@ -319,14 +319,14 @@ export const saveFileOffline = (
     ).join("/");
     addDocumentToEMFS(
         activeProjectUid,
-        csound,
+        libcsound,
         assoc("savedValue", newValue, document),
         absolutePath
     );
 };
 
 // for unauthorized or offline playing
-export const saveAllOffline = (csound: ICsoundObject) => {
+export const saveAllOffline = (libcsound: ICsound) => {
     const state = store.getState() as IStore;
     const activeProjectUid = pathOr(
         "",
@@ -347,7 +347,7 @@ export const saveAllOffline = (csound: ICsoundObject) => {
             ).join("/");
             addDocumentToEMFS(
                 activeProjectUid,
-                csound,
+                libcsound,
                 assoc("savedValue", document.currentValue, document),
                 absolutePath
             );

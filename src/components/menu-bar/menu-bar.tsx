@@ -16,11 +16,7 @@ import {
     toggleManualPanel,
     setFileTreePanelOpen
 } from "@comp/project-editor/actions";
-import {
-    renderToDisk,
-    enableMidiInput,
-    enableAudioInput
-} from "@comp/csound/actions";
+import { renderToDisk } from "@comp/csound/actions";
 import { selectCsoundStatus } from "@comp/csound/selectors";
 import { selectIsOwner } from "@comp/project-editor/selectors";
 import { changeTheme } from "@comp/themes/action";
@@ -202,23 +198,6 @@ function MenuBar(properties) {
                     label: "Virtual Midi Keyboard",
                     callback: () => dispatch(openBottomTab("piano")),
                     checked: isMidiPianoVisible
-                }
-            ]
-        },
-        {
-            label: "I/O",
-            submenu: [
-                {
-                    label: "Refresh MIDI Input",
-                    callback: () => {
-                        dispatch(enableMidiInput());
-                    }
-                },
-                {
-                    label: "Refresh Audio Input",
-                    callback: () => {
-                        dispatch(enableAudioInput());
-                    }
                 }
             ]
         },

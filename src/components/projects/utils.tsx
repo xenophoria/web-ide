@@ -4,7 +4,7 @@ import {
     projectLastModified
 } from "@config/firestore";
 import { IDocument, IDocumentsMap, IDocumentFileType, IProject } from "./types";
-import { ICsoundObject } from "@comp/csound/types";
+import { ICsound } from "@comp/csound/types";
 import {
     assoc,
     curry,
@@ -50,7 +50,7 @@ export const generateEmptyDocument = (documentUid, filename): IDocument => ({
 export const addDocumentToEMFS = curry(
     (
         projectUid: string,
-        csound: ICsoundObject,
+        libcsound: ICsound,
         document: IDocument,
         absolutePath: string
     ) => {
@@ -68,9 +68,9 @@ export const addDocumentToEMFS = curry(
                     xhr.responseType = "arraybuffer";
                     xhr.addEventListener("load", function (event) {
                         const blob = xhr.response;
-                        csound &&
-                            typeof csound.writeToFS === "function" &&
-                            csound.writeToFS(absolutePath, blob);
+                        libcsound &&
+                            typeof libcsound.copyToFs === "function" &&
+                            libcsound.copyToFs(blob, absolutePath);
                     });
                     xhr.open("GET", url);
                     xhr.send();
@@ -80,11 +80,11 @@ export const addDocumentToEMFS = curry(
                 });
         } else {
             const encoder = new TextEncoder();
-            csound &&
-                typeof csound.writeToFS === "function" &&
-                csound.writeToFS(
-                    absolutePath,
-                    encoder.encode(document.savedValue)
+            libcsound &&
+                typeof libcsound.copyToFs === "function" &&
+                libcsound.copyToFs(
+                    encoder.encode(document.savedValue),
+                    absolutePath
                 );
         }
     }

@@ -7,5 +7,5 @@ export const selectCsound = (store: any) => {
 
 export const selectCsoundStatus = (store: any) => {
     const state: ICsoundReducer = store.csound;
-    return state.status;
+    return state.playState;
 };

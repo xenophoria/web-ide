@@ -5,7 +5,7 @@ import { UnControlled } from "react-codemirror2";
 import { editorEvalCode, uncommentLine } from "./utils";
 import { debounce } from "throttle-debounce";
 import { IDocument, IProject } from "../projects/types";
-import { ICsoundObject, ICsoundStatus } from "../csound/types";
+import { CsoundInstance, CsoundPlayState } from "../csound/types";
 import { isNil, path, pathOr, propOr } from "ramda";
 import * as projectActions from "../projects/actions";
 import * as projectEditorActions from "../project-editor/actions";
@@ -81,13 +81,13 @@ const CodeEditor = ({ documentUid, projectUid, isOwner }) => {
     const maybeCsoundFile = filenameToCsoundType(document.filename);
     const documentType: string = maybeCsoundFile ? maybeCsoundFile : "txt";
 
-    const csound: ICsoundObject | undefined = useSelector(
+    const csound: CsoundInstance | undefined = useSelector(
         path(["csound", "csound"])
     );
 
-    const csoundStatus: ICsoundStatus = useSelector(
-        pathOr("stopped", ["csound", "status"])
-    ) as ICsoundStatus;
+    const csoundStatus: CsoundPlayState = useSelector(
+        pathOr("stopped", ["csound", "playState"])
+    ) as CsoundPlayState;
 
     const printToConsole: IPrintToConsole | undefined = useSelector(
         path(["ConsoleReducer", "printToConsole"])

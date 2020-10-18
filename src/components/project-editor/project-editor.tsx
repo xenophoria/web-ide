@@ -51,7 +51,7 @@ import { mapIndexed, isMobile } from "@root/utils";
 import { closeProject } from "../projects/actions";
 import { isAudioFile } from "../projects/utils";
 import * as SS from "./styles";
-import { enableMidiInput, enableAudioInput } from "../csound/actions";
+// import { enableMidiInput, enableAudioInput } from "../csound/actions";
 import BottomTabs from "@comp/bottom-tabs/component";
 import MobileTabs from "@comp/bottom-tabs/mobile-tabs";
 
@@ -160,10 +160,10 @@ const ProjectEditor = ({ activeProject, csound }) => {
         };
     }, [csound, dispatch, isOwner, projectOwnerUid, projectUid]);
 
-    useEffect(() => {
-        dispatch(enableMidiInput());
-        dispatch(enableAudioInput());
-    }, [dispatch]);
+    // useEffect(() => {
+    //     dispatch(enableMidiInput());
+    //     dispatch(enableAudioInput());
+    // }, [dispatch]);
 
     const tabDockDocuments: IOpenDocument[] = useSelector(
         pathOr([] as IOpenDocument[], [
